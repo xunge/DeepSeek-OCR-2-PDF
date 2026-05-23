@@ -78,6 +78,40 @@ environment:
 For a single H200, start conservatively with `MAX_CONCURRENCY=16`. Increase it
 after checking GPU memory and latency under real PDF workloads.
 
+## Optional Qwen3-VL Image Captioning
+
+When DeepSeek-OCR-2 detects and crops an embedded image, the backend can call an
+OpenAI-compatible Qwen3-VL service and insert the returned description under the
+corresponding image link in the `.mmd` output.
+
+It is enabled in `docker-compose.yml`:
+
+```yaml
+environment:
+  IMAGE_CAPTION_ENABLED: "true"
+  IMAGE_CAPTION_ENDPOINT: "http://qwen-vl:8000/v1/chat/completions"
+  IMAGE_CAPTION_MODEL: "Qwen/Qwen3-VL-2B-Instruct"
+```
+
+The Qwen3-VL service should expose `/v1/chat/completions` and accept image_url
+messages, such as a vLLM/SGLang/OpenAI-compatible server running
+`Qwen/Qwen3-VL-2B-Instruct`.
+
+Download the Qwen3-VL model into the project-local model directory:
+
+```bash
+MODEL_REPO_ID=Qwen/Qwen3-VL-2B-Instruct MODEL_DIR=models/Qwen3-VL-2B-Instruct python3 scripts/download_model.py
+```
+
+If you can use the configured vLLM image for Qwen3-VL, start the stack with:
+
+```bash
+docker compose up -d
+```
+
+The compose file enables `IMAGE_CAPTION_ENABLED=true` and starts a `qwen-vl`
+service at `http://qwen-vl:8000/v1/chat/completions`.
+
 ## Notes
 
 The Dockerfile starts from the CUDA 11.8 `base` image and installs the minimal

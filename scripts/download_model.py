@@ -4,10 +4,12 @@ from pathlib import Path
 
 from huggingface_hub import snapshot_download
 
+model_name = 'Qwen3-VL-2B-Instruct'
+author_name = 'Qwen'
 
-REPO_ID = os.getenv("MODEL_REPO_ID", "deepseek-ai/DeepSeek-OCR-2")
+REPO_ID = os.getenv("MODEL_REPO_ID", f"{author_name}/{model_name}")
 TARGET_DIR = Path(
-    os.getenv("MODEL_DIR", "models/DeepSeek-OCR-2")
+    os.getenv("MODEL_DIR", f"models/{model_name}")
 ).expanduser().resolve()
 
 

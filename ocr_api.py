@@ -47,6 +47,7 @@ from vllm.model_executor.models.registry import ModelRegistry
 from vllm import LLM, SamplingParams
 from process.image_process import DeepseekOCR2Processor
 from process.ngram_norepeat import NoRepeatNGramLogitsProcessor
+from image_caption import describe_image, format_image_description
 import re
 
 ModelRegistry.register_model("DeepseekOCR2ForCausalLM", DeepseekOCR2ForCausalLM)
@@ -292,9 +293,16 @@ def process_pdf_task(task_id, pdf_path, original_filename):
             draw_images.append(result_image)
 
             for idx, a_match_image in enumerate(matches_images):
+                image_rel_path = f"images/{jdx}_{idx}.jpg"
+                image_file_path = os.path.join(output_dir, image_rel_path)
+                image_caption = format_image_description(describe_image(image_file_path))
+                image_markdown = f"![]({image_rel_path})\n"
+                if image_caption:
+                    image_markdown += f"\n{image_caption}\n"
+
                 content = content.replace(
                     a_match_image,
-                    f"![](images/" + str(jdx) + "_" + str(idx) + ".jpg)\n",
+                    image_markdown,
                 )
 
             for idx, a_match_other in enumerate(matches_other):

@@ -17,6 +17,11 @@ services:
       MAX_CONCURRENCY: "16"
       NUM_WORKERS: "16"
       MAX_CONTENT_LENGTH_MB: "500"
+      IMAGE_CAPTION_ENABLED: "true"
+      IMAGE_CAPTION_ENDPOINT: "http://qwen-vl:8000/v1/chat/completions"
+      IMAGE_CAPTION_MODEL: "Qwen/Qwen3-VL-2B-Instruct"
+      IMAGE_CAPTION_MAX_TOKENS: "256"
+      IMAGE_CAPTION_TIMEOUT: "120"
       PROMPT: |-
         <image>
         Extract the document content as markdown. For images, output [IMAGE DESCRIPTION: describe the image content in detail].
@@ -28,6 +33,31 @@ services:
       - ./hf-cache:/data/huggingface
     ports:
       - "5000:5000"
+    depends_on:
+      - qwen-vl
+    restart: unless-stopped
+
+  qwen-vl:
+    image: vllm/vllm-openai:v0.20.0-cu130-ubuntu2404
+    container_name: qwen3-vl-2b
+    gpus: all
+    ipc: host
+    shm_size: "32g"
+    command:
+      - --model
+      - /models/Qwen3-VL-2B-Instruct
+      - --served-model-name
+      - Qwen/Qwen3-VL-2B-Instruct
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --max-model-len
+      - "8192"
+    volumes:
+      - ./models/Qwen3-VL-2B-Instruct:/models/Qwen3-VL-2B-Instruct:ro
+    expose:
+      - "8000"
     restart: unless-stopped
 
   web:
