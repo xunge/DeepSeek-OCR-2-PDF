@@ -331,6 +331,7 @@ class DeepseekOCR2Processor(ProcessorMixin):
         self,
         # conversation: str,
         images: List[Image.Image],
+        prompt: str = None,
         bos: bool = True,
         eos: bool = True,
         cropping: bool = True,
@@ -338,8 +339,13 @@ class DeepseekOCR2Processor(ProcessorMixin):
         """Tokenize text with <image> tags."""
 
         # print(conversation)
-        conversation = PROMPT
-        assert conversation.count(self.image_token) == len(images)
+        conversation = PROMPT if prompt is None else prompt
+        image_token_count = conversation.count(self.image_token)
+        if image_token_count != len(images):
+            raise ValueError(
+                f"Prompt must contain {len(images)} {self.image_token!r} token(s), "
+                f"but contains {image_token_count}. Prompt starts with: {conversation[:120]!r}"
+            )
         text_splits = conversation.split(self.image_token)
         images_list, images_crop_list, images_seq_mask, images_spatial_crop = [], [], [], []
         image_shapes = []

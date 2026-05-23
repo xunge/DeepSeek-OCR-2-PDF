@@ -14,10 +14,10 @@ import threading
 app = Flask(__name__)
 CORS(app)
 
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "outputs"
-TEMP_FOLDER = "temp"
+app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_CONTENT_LENGTH_MB", "500")) * 1024 * 1024
+UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
+OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "outputs")
+TEMP_FOLDER = os.getenv("TEMP_FOLDER", "temp")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -28,8 +28,7 @@ task_lock = threading.Lock()
 
 if torch.version.cuda == "11.8":
     os.environ["TRITON_PTXAS_PATH"] = "/usr/local/cuda-11.8/bin/ptxas"
-os.environ["VLLM_USE_V1"] = "0"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ.setdefault("VLLM_USE_V1", "0")
 
 from config import (
     MODEL_PATH,
@@ -100,13 +99,26 @@ def pdf_to_images(pdf_path, dpi=144):
     return images
 
 
+def prompt_for_single_image(prompt, image_token="<image>"):
+    image_token_count = prompt.count(image_token)
+    if image_token_count == 0:
+        return f"{image_token}\n{prompt}"
+    if image_token_count == 1:
+        return prompt
+    raise ValueError(
+        f"PROMPT must contain exactly one {image_token!r} token for single-page OCR, "
+        f"but contains {image_token_count}."
+    )
+
+
 def process_single_image(image):
-    prompt_in = PROMPT
+    processor = DeepseekOCR2Processor()
+    prompt_in = prompt_for_single_image(PROMPT, processor.image_token)
     cache_item = {
         "prompt": prompt_in,
         "multi_modal_data": {
-            "image": DeepseekOCR2Processor().tokenize_with_images(
-                images=[image], bos=True, eos=True, cropping=CROP_MODE
+            "image": processor.tokenize_with_images(
+                images=[image], prompt=prompt_in, bos=True, eos=True, cropping=CROP_MODE
             )
         },
     }

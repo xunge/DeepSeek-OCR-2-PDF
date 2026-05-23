@@ -1,4 +1,4 @@
 // Frontend configuration
 export const config = {
-  serverUrl: 'http://jiang3090_4.xungejiang.com:5000'
+  serverUrl: window.__OCR_API_BASE_URL__ || window.location.origin
 }

@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: deepseek-ocr2-api:cu118
+    container_name: deepseek-ocr2-api
+    gpus: all
+    ipc: host
+    shm_size: "64g"
+    environment:
+      MODEL_PATH: /app/models/DeepSeek-OCR-2
+      CUDA_VISIBLE_DEVICES: "0"
+      VLLM_USE_V1: "0"
+      FLASK_HOST: "0.0.0.0"
+      FLASK_PORT: "5000"
+      MAX_CONCURRENCY: "16"
+      NUM_WORKERS: "16"
+      MAX_CONTENT_LENGTH_MB: "500"
+      PROMPT: |-
+        <image>
+        Extract the document content as markdown. For images, output [IMAGE DESCRIPTION: describe the image content in detail].
+    volumes:
+      - ./models/DeepSeek-OCR-2:/app/models/DeepSeek-OCR-2:ro
+      - ./uploads:/data/uploads
+      - ./outputs:/data/outputs
+      - ./temp:/data/temp
+      - ./hf-cache:/data/huggingface
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: deepseek-ocr2-web:latest
+    container_name: deepseek-ocr2-web
+    depends_on:
+      - api
+    ports:
+      - "81:80"
+    restart: unless-stopped
